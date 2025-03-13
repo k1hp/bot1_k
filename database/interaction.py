@@ -1,10 +1,13 @@
-from database.creation import Session, Base, Group
+from database.creation import Session, Base, Group, engine
 from datetime import date
 from typing import List, Tuple, Optional
 from sqlalchemy import insert
 import json
 
-from parsinger.parser import GroupsParser, Parser
+from helpers.managers import TimetableManager
+from helpers.times import Clocks
+from others.settings import BASE_URL
+from parsinger.parser import GroupsParser
 
 
 class DataBase:
@@ -16,6 +19,12 @@ class DataBase:
     def get_data(self, table: Base) -> List[Base]:
         with Session() as session:
             return session.query(table).all()
+
+    def create_all(self):
+        Base.metadata.create_all(engine)
+
+    def drop_table(self, table: Base) -> None:
+        Base.metadata.drop_all(engine, tables=[table.__table__])
 
 
 class GroupsUpdater(DataBase, GroupsParser):
@@ -49,15 +58,39 @@ class GroupsUpdater(DataBase, GroupsParser):
         self.insert_big_data(Group, groups_data)
 
 class TimetableAdder(DataBase):
-    def __init__(self, parser: Parser):
-        # получим все ссылки из бд и добавим к ним параметры
+    def __init__(self, parser: GroupsParser, table: Base) -> None:
+        self.parser = parser
+        self.table = table
+        clocks = Clocks()
+        parameters = clocks.get_latest_params(parser.pers)
+        self.parameters = (self.__convert_dict_str(parameters[0]), self.__convert_dict_str(parameters[1]))
+
+    @staticmethod
+    def __convert_dict_str(data: dict) -> str:
+        return "".join([f'&{key}={value}' for key, value in data.items()])
 
     def __links_generation(self):
-        self.get_groups()
+        links = []
+        for row in self.get_data(self.table):
+            links.append(BASE_URL+ row.url + self.parameters[0])
+            links.append(BASE_URL + row.url + self.parameters[1])
+        return links
 
     def get_timetables(self):
-        ...
+        row_name = "group_name" if self.table == Group else "teacher_name"
+        links = self.__links_generation()
+        print(f"Начало сбора данных {links.__len__()}")
+        soups = self.parser.get_soups(links[:2])
+        print("Конец сбора данных")
+        timetables = [TimetableManager(soup, row_name).data for soup in soups]
+        print(timetables)
 
+
+    def add_timetables(self):
+        self.drop_table(self.table)
+        self.create_all()
 
 if __name__ == '__main__':
-    psd = GroupsUpdater()
+    # psd = GroupsUpdater()
+    fd = TimetableAdder(GroupsParser(), Group)
+    print(fd.get_timetables())

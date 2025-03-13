@@ -39,7 +39,7 @@ class GroupTimetable(Base, Timetable):
     __tablename__ = 'group_timetable'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
     group_name: Mapped[str] = mapped_column(String(50), ForeignKey('groups.name'), nullable=False)
-    date: Mapped[Date] = mapped_column(Date)
+    date: Mapped[str] = mapped_column(String(30), nullable=False)
     body: Mapped[JSON] = mapped_column(JSON)
 
     group: Mapped['Group'] = relationship('Group', back_populates='timetables')
@@ -58,8 +58,8 @@ class Teacher(Base):
 class TeacherTimetable(Base, Timetable):
     __tablename__ = 'teacher_timetable'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
-    teacher_id: Mapped[int] = mapped_column(ForeignKey('teachers.id'), nullable=False)
-    date: Mapped[Date] = mapped_column(Date)
+    teacher_name: Mapped[str] = mapped_column(String(60), ForeignKey('teachers.name'), nullable=False)
+    date:  Mapped[str] = mapped_column(String(30), nullable=False)
     body: Mapped[JSON] = mapped_column(JSON)
 
     teacher: Mapped["Teacher"] = relationship('Teacher', back_populates='timetables')
@@ -67,3 +67,4 @@ class TeacherTimetable(Base, Timetable):
 
 if __name__ == '__main__':
     Base.metadata.create_all(engine)
+    # Base.metadata.drop_all(engine, tables=[GroupTimetable.__table__])

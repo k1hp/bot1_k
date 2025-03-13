@@ -16,15 +16,19 @@ class Parser:
 
     # config = Preparations()  # добавить прокси и тп
 
-    def _do_request(self, url: str, parameters: Optional[dict] = None) -> requests.Response:
+    def do_request(self, url: str, parameters: Optional[dict] = None) -> requests.Response:
         return requests.get(url, params=parameters)
 
     def _do_requests(self, urls: List[str]) -> List[requests.Response]:
         start_time = perf_counter()
+        print("Начало requests")
+
+        total = len(urls)
         with requests.Session() as session:
             session.headers.update({'User-Agent': 'Mozilla/5.0'})
             results = []
-            for url in urls:
+            for index, url in enumerate(urls):
+                print(f"\r{index}/{total}", end="")
                 response = session.get(url)
                 results.append(response)
             print(f"Итоговое время: {perf_counter() - start_time}")
@@ -33,14 +37,14 @@ class Parser:
     def _create_soup(self, html_text: str) -> BeautifulSoup:
         return BeautifulSoup(html_text, 'lxml')
 
-    def _get_soups(self, urls: List[str]) -> List[BeautifulSoup]:
+    def get_soups(self, urls: List[str]) -> List[BeautifulSoup]:
         results = self._do_requests(urls)
         return [self._create_soup(res.text) for res in results]
 
 
 class GroupsParser(Parser):
     def __init__(self):
-        self.__base_response: requests.Response = self._do_request(BASE_URL)
+        self.__base_response: requests.Response = self.do_request(BASE_URL)
         self.__soup = self._create_soup(self.__base_response.text)
         self.__clocks = Clocks()
 
@@ -49,16 +53,19 @@ class GroupsParser(Parser):
         lst = [(el.attrs["value"], el.string) for el in result]
         return lst[1:]
 
+    @property
     @filter_tuples
-    def _get_pers(self) -> Tuple[str]:
+    def pers(self) -> Tuple[str]:
         return self.__get_parameters("pers")
 
+    @property
     @filter_tuples
-    def _get_facs(self) -> Tuple[str]:  # value, fac
+    def facs(self) -> Tuple[str]:  # value, fac
         return self.__get_parameters("facs")
 
+    @property
     @filter_tuples
-    def _get_courses(self) -> Tuple[str]:  # value, cor
+    def courses(self) -> Tuple[str]:  # value, cor
         return self.__get_parameters("courses")
 
     def _get_value_pers(self) -> List[tuple]:
@@ -84,18 +91,23 @@ class GroupsParser(Parser):
 
     def get_groups(self) -> List[Tuple]:  # name, url
         urls = self.__create_facs_urls()
-        soups = self._get_soups(urls)
+        soups = self.get_soups(urls)
         groups = list()
         for soup, url in zip(soups, urls):
             try:
                 result = soup.select_one(".table-responsive").select("a.btn")
                 parameters = url.split("&")[-2::]
                 for element in result:
-                    groups.append((element.string, element.attrs["href"].split("&")[0], parameters))
+                    url = element.attrs["href"].split("&")[0]
+                    groups.append((element.string, url, parameters))
             except Exception as e:
                 print("Нет групп", e)
 
         return groups
+
+    class TeacherParser(Parser):
+        def __init__(self):
+            ...
 
 
 if __name__ == '__main__':
