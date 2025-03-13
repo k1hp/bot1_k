@@ -1,5 +1,5 @@
 import requests
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from bs4 import BeautifulSoup
 import lxml
 from datetime import datetime
@@ -7,6 +7,7 @@ from datetime import datetime
 from others.settings import BASE_URL, GROUPS_URL
 from helpers.times import Clocks
 from time import perf_counter
+from others.decorators import filter_tuples
 
 
 class Parser:
@@ -15,8 +16,8 @@ class Parser:
 
     # config = Preparations()  # добавить прокси и тп
 
-    def _do_request(self, url: str) -> requests.Response:
-        return requests.get(url)
+    def _do_request(self, url: str, parameters: Optional[dict] = None) -> requests.Response:
+        return requests.get(url, params=parameters)
 
     def _do_requests(self, urls: List[str]) -> List[requests.Response]:
         start_time = perf_counter()
@@ -26,9 +27,8 @@ class Parser:
             for url in urls:
                 response = session.get(url)
                 results.append(response)
-            print(f"Итоговое время: {perf_counter()-start_time}")
+            print(f"Итоговое время: {perf_counter() - start_time}")
             return results
-
 
     def _create_soup(self, html_text: str) -> BeautifulSoup:
         return BeautifulSoup(html_text, 'lxml')
@@ -49,21 +49,33 @@ class GroupsParser(Parser):
         lst = [(el.attrs["value"], el.string) for el in result]
         return lst[1:]
 
-    def _get_pers(self) -> List[tuple]:
+    @filter_tuples
+    def _get_pers(self) -> Tuple[str]:
         return self.__get_parameters("pers")
 
-    def _get_facs(self) -> List[tuple]:  # value, fac
+    @filter_tuples
+    def _get_facs(self) -> Tuple[str]:  # value, fac
         return self.__get_parameters("facs")
 
-    def _get_courses(self):  # value, cor
+    @filter_tuples
+    def _get_courses(self) -> Tuple[str]:  # value, cor
+        return self.__get_parameters("courses")
+
+    def _get_value_pers(self) -> List[tuple]:
+        return self.__get_parameters("pers")
+
+    def _get_value_facs(self) -> List[tuple]:  # value, fac
+        return self.__get_parameters("facs")
+
+    def _get_value_courses(self) -> List[tuple]:  # value, cor
         return self.__get_parameters("courses")
 
     def __create_facs_urls(self) -> List[str]:
-        pers = self._get_pers()
+        pers = self._get_value_pers()
         period = self.__clocks.define_need_period(map(lambda x: x[-1], pers), datetime.today())
         filtered_period = filter(lambda el: el[-1] == period.__str__(), pers).__next__()
-        facs = self._get_facs()
-        courses = self._get_courses()
+        facs = self._get_value_facs()
+        courses = self._get_value_courses()
         urls = list()
         for fac in facs:
             for course in courses:
@@ -79,18 +91,12 @@ class GroupsParser(Parser):
                 result = soup.select_one(".table-responsive").select("a.btn")
                 parameters = url.split("&")[-2::]
                 for element in result:
-                    groups.append((element.string, element.attrs["href"], parameters))
+                    groups.append((element.string, element.attrs["href"].split("&")[0], parameters))
             except Exception as e:
                 print("Нет групп", e)
 
         return groups
 
-    def links_generation(self):
-        self.get_groups()
-
-
-class Timetable:  # превращает ссылку в расписание
-    ...
 
 if __name__ == '__main__':
     parser = GroupsParser()

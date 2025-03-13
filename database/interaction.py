@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 from sqlalchemy import insert
 import json
 
-from parsinger.parser import GroupsParser
+from parsinger.parser import GroupsParser, Parser
 
 
 class DataBase:
@@ -35,13 +35,11 @@ class GroupsUpdater(DataBase, GroupsParser):
 
     def update_groups(self) -> None:
         need_names = self.check_groups()
-        print(need_names)
         if need_names is None:
             print("Новых групп не обнаружено")
             return None
         need_groups = filter(lambda el: el[0] in need_names, self.groups)
-        faculties = dict(self._get_facs())
-        print(faculties)
+        faculties = dict(self._get_value_facs())
         groups_data = []
         for name, url, parameters in need_groups:
             course = parameters[-1][-2::].replace("=", "")
@@ -50,7 +48,16 @@ class GroupsUpdater(DataBase, GroupsParser):
             groups_data.append(result)
         self.insert_big_data(Group, groups_data)
 
+class TimetableAdder(DataBase):
+    def __init__(self, parser: Parser):
+        # получим все ссылки из бд и добавим к ним параметры
+
+    def __links_generation(self):
+        self.get_groups()
+
+    def get_timetables(self):
+        ...
+
 
 if __name__ == '__main__':
     psd = GroupsUpdater()
-# print(psd.names)

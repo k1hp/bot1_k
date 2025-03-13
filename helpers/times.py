@@ -1,9 +1,8 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from others.settings import GROUP_CONFIG_PARAMS
 
 from datetime import datetime, timedelta, date
-from typing import List
 
 
 class Period:
@@ -87,14 +86,14 @@ class Clocks:
         return inp.day, inp.month
 
     def define_need_period(
-        self, periods: List[str], our_date: datetime | date
+        self, periods: List[str] | Tuple[str], our_date: datetime | date
     ) -> Optional[Period]:
         for element in periods:
             period = Period(element)
             if our_date in period:
                 return period
 
-    def get_period_params(self, periods: List[str], our_date: str) -> dict:
+    def get_period_params(self, periods: List[str] | Tuple[str], our_date: str) -> dict:
         our_date = self.period_values[our_date]
         period: Optional[Period] = self.define_need_period(periods, our_date)
         if period is None:
@@ -106,6 +105,11 @@ class Clocks:
             )
         )
         return data
+
+    def get_latest_params(self, periods: List[str] | Tuple[str]) -> Tuple[dict]:
+        return (self.get_period_params(periods, "this_week"), self.get_period_params(periods, "next_week"))
+
+
 
 
 if __name__ == "__main__":

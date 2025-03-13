@@ -38,7 +38,7 @@ class Group(Base):
 class GroupTimetable(Base, Timetable):
     __tablename__ = 'group_timetable'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
-    group_id: Mapped[int] = mapped_column(ForeignKey('groups.id'), nullable=False)
+    group_name: Mapped[str] = mapped_column(String(50), ForeignKey('groups.name'), nullable=False)
     date: Mapped[Date] = mapped_column(Date)
     body: Mapped[JSON] = mapped_column(JSON)
 

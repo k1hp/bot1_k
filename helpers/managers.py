@@ -1,2 +1,5 @@
 class Manager:
     ...
+
+
+class Timetable:
