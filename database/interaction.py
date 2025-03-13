@@ -18,13 +18,13 @@ class DataBase:
             return session.query(table).all()
 
 
-class UpdatingGroups(DataBase, GroupsParser):
+class GroupsUpdater(DataBase, GroupsParser):
     def __init__(self):
         super().__init__()
-        self.names = []
         self.groups = self.get_groups()
-        for name, url in self.groups:
-            self.names.append(name)
+        self.names = list(map(lambda x: x[0], self.groups))
+        # for name, url, parameters in self.groups:
+        #     self.names.append(name)
         self.update_groups()
 
     def check_groups(self) -> Optional[Tuple[str]]:
@@ -39,17 +39,18 @@ class UpdatingGroups(DataBase, GroupsParser):
         if need_names is None:
             print("Новых групп не обнаружено")
             return None
-        name_url_lst = filter(lambda el: el[0] in need_names, self.groups)
-        print(self._get_facs())
+        need_groups = filter(lambda el: el[0] in need_names, self.groups)
         faculties = dict(self._get_facs())
+        print(faculties)
         groups_data = []
-        for name, url in name_url_lst:
-            parameters = url.split("&")[-2::]
-            print(parameters)
-            result = {"course": parameters[0][-1], "faculty": faculties[parameters[-1][-1]], "name": name, "url": url}
+        for name, url, parameters in need_groups:
+            course = parameters[-1][-2::].replace("=", "")
+            faculty = parameters[0][-2::].replace("=", "")
+            result = {"course": int(course), "faculty": faculties[faculty], "name": name, "url": url}
             groups_data.append(result)
-        print(groups_data)
+        self.insert_big_data(Group, groups_data)
 
 
-
-psd = UpdatingGroups()
+if __name__ == '__main__':
+    psd = GroupsUpdater()
+# print(psd.names)

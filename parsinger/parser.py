@@ -74,12 +74,15 @@ class GroupsParser(Parser):
         urls = self.__create_facs_urls()
         soups = self._get_soups(urls)
         groups = list()
-        for soup in soups:
+        for soup, url in zip(soups, urls):
             try:
-                result = soup.select_one(".table-responsive a.btn")
-                groups.append((result.string, result.attrs["href"]))
+                result = soup.select_one(".table-responsive").select("a.btn")
+                parameters = url.split("&")[-2::]
+                for element in result:
+                    groups.append((element.string, element.attrs["href"], parameters))
             except Exception as e:
                 print("Нет групп", e)
+
         return groups
 
     def links_generation(self):

@@ -27,8 +27,8 @@ class Group(Base):
     __tablename__ = 'groups'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False, index=True)
     course: Mapped[int] = mapped_column(nullable=False)
-    faculty: Mapped[str] = mapped_column(String(20), nullable=False)
-    name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    faculty: Mapped[str] = mapped_column(String(30), nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     url: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
 
     users: Mapped[List["User"]] = relationship('User', back_populates='group')
