@@ -2,9 +2,10 @@ from sqlalchemy import create_engine, ForeignKey, JSON, String, Date
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, mapped_column, Mapped
 from typing import Optional, List
+from others.conf import DB_CONNECTION
 
 Base = declarative_base()
-engine = create_engine('mysql+pymysql://second_user:artem7451330@172.19.17.1:3306/bot_database')
+engine = create_engine(DB_CONNECTION)
 Session = sessionmaker(bind=engine)
 
 class Timetable:
