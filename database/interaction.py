@@ -80,7 +80,9 @@ class TimetableAdder(DataBase):
         row_name = "group_name" if self.table == Group else "teacher_name"
         links = self.__links_generation()
         print(f"Начало сбора данных {links.__len__()}")
-        soups = self.parser.get_soups(links[:2])
+
+        # soups = self.parser.get_soups(links[:2])
+        soups = self.parser.get_soups(links)
         print("Конец сбора данных")
         timetables = [TimetableManager(soup, row_name).data for soup in soups]
         print(timetables)

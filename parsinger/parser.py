@@ -8,29 +8,43 @@ from others.settings import BASE_URL, GROUPS_URL
 from helpers.times import Clocks
 from time import perf_counter
 from others.decorators import filter_tuples
+from threading import Thread
+import queue
 
 
 class Parser:
     def __init__(self):
-        ...
+        self.results_queue = queue.Queue()
 
     # config = Preparations()  # добавить прокси и тп
 
     def do_request(self, url: str, parameters: Optional[dict] = None) -> requests.Response:
         return requests.get(url, params=parameters)
 
+    def buffer_request(self, url: str, session: requests.Session):
+        response = session.get(url)
+        # Помещаем ответ в очередь
+        self.results_queue.put(response)
+
     def _do_requests(self, urls: List[str]) -> List[requests.Response]:
         start_time = perf_counter()
-        print("Начало requests")
-
+        print("Начало _do_requests")
         total = len(urls)
         with requests.Session() as session:
             session.headers.update({'User-Agent': 'Mozilla/5.0'})
-            results = []
+            threads = []
             for index, url in enumerate(urls):
                 print(f"\r{index}/{total}", end="")
-                response = session.get(url)
-                results.append(response)
+                thread = Thread(target=self.buffer_request, args=(url, session))
+                thread.start()
+                threads.append(thread)
+
+            for thread in threads:
+                thread.join()
+
+            results = []
+            while not self.results_queue.empty():
+                results.append(self.results_queue.get())
             print(f"Итоговое время: {perf_counter() - start_time}")
             return results
 
@@ -44,6 +58,7 @@ class Parser:
 
 class GroupsParser(Parser):
     def __init__(self):
+        super().__init__()
         self.__base_response: requests.Response = self.do_request(BASE_URL)
         self.__soup = self._create_soup(self.__base_response.text)
         self.__clocks = Clocks()
